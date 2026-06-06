@@ -6,6 +6,11 @@ export interface ServicePhoto {
   caption: string;
 }
 
+export interface WorkSession {
+  start: string; // HH:MM
+  end: string;   // HH:MM
+}
+
 export interface ServiceNote {
   id: string;
   createdAt: number;
@@ -13,11 +18,11 @@ export interface ServiceNote {
   status: NoteStatus;
   client: string;
   location: string;
+  kraj: string;
   machine: string;
   machineNumber: string;
-  date: string;       // DD.MM.YYYY
-  startTime: string;  // HH:MM
-  endTime: string;    // HH:MM
+  date: string;         // DD.MM.YYYY
+  sessions: WorkSession[];
   problem: string;
   workDone: string;
   parts: string;

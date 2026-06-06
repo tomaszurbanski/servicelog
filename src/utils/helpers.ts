@@ -1,4 +1,4 @@
-import { NoteStatus } from '../types';
+import { NoteStatus, WorkSession } from '../types';
 
 export const STATUS_LABELS: Record<NoteStatus, string> = {
   open: 'Otwarte',
@@ -36,3 +36,38 @@ export const formatTime = (date: Date): string => {
 
 export const generateId = (): string =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+export const formatTimeInput = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return digits.slice(0, 2) + ':' + digits.slice(2);
+};
+
+const parseMinutes = (time: string): number => {
+  const parts = time.split(':');
+  if (parts.length !== 2) return -1;
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(h) || isNaN(m) || h > 23 || m > 59) return -1;
+  return h * 60 + m;
+};
+
+export const calcTotalMinutes = (sessions: WorkSession[]): number => {
+  return sessions.reduce((sum, s) => {
+    if (!s.start || !s.end) return sum;
+    const startMin = parseMinutes(s.start);
+    let endMin = parseMinutes(s.end);
+    if (startMin < 0 || endMin < 0) return sum;
+    if (endMin < startMin) endMin += 24 * 60; // overnight
+    return sum + Math.max(0, endMin - startMin);
+  }, 0);
+};
+
+export const formatDuration = (minutes: number): string => {
+  if (minutes <= 0) return '—';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h} h`;
+  return `${h} h ${m} min`;
+};

@@ -3,9 +3,17 @@ import { ServiceNote } from '../types';
 
 const NOTES_KEY = '@servicelog_notes';
 
+const migrate = (note: any): ServiceNote => {
+  if (!note.sessions) {
+    note.sessions = [{ start: note.startTime ?? '', end: note.endTime ?? '' }];
+  }
+  if (note.kraj === undefined) note.kraj = '';
+  return note as ServiceNote;
+};
+
 export const getNotes = async (): Promise<ServiceNote[]> => {
   const data = await AsyncStorage.getItem(NOTES_KEY);
-  return data ? JSON.parse(data) : [];
+  return data ? (JSON.parse(data) as any[]).map(migrate) : [];
 };
 
 export const getNote = async (id: string): Promise<ServiceNote | null> => {

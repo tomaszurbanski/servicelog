@@ -9,12 +9,13 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Directory, File as FSFile, Paths } from 'expo-file-system';
 import { RootStackParamList } from '../../App';
-import { ServiceNote, ServicePhoto, NoteStatus } from '../types';
+import { ServiceNote, ServicePhoto, NoteStatus, WorkSession } from '../types';
 import { getNote, saveNote } from '../utils/storage';
 import { exportToPDF } from '../utils/export';
 import {
   STATUS_LABELS, STATUS_COLORS, STATUS_BG,
   formatDate, formatTime, generateId,
+  formatTimeInput, calcTotalMinutes, formatDuration,
 } from '../utils/helpers';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Note'>;
@@ -32,11 +33,11 @@ const emptyNote = (): Omit<ServiceNote, 'id' | 'createdAt' | 'updatedAt'> => ({
   status: 'open',
   client: '',
   location: '',
+  kraj: '',
   machine: '',
   machineNumber: '',
   date: formatDate(new Date()),
-  startTime: formatTime(new Date()),
-  endTime: '',
+  sessions: [{ start: formatTime(new Date()), end: '' }],
   problem: '',
   workDone: '',
   parts: '',
@@ -64,6 +65,19 @@ export default function NoteScreen({ route, navigation }: Props) {
 
   const set = (key: keyof typeof form, value: any) =>
     setForm(prev => ({ ...prev, [key]: value }));
+
+  const updateSession = (idx: number, key: 'start' | 'end', val: string) => {
+    const sessions = [...form.sessions];
+    sessions[idx] = { ...sessions[idx], [key]: formatTimeInput(val) };
+    set('sessions', sessions);
+  };
+
+  const addSession = () => set('sessions', [...form.sessions, { start: '', end: '' }]);
+
+  const removeSession = (idx: number) =>
+    set('sessions', form.sessions.filter((_, i) => i !== idx));
+
+  const totalMinutes = calcTotalMinutes(form.sessions);
 
   const handleSave = useCallback(async () => {
     if (!form.client.trim() && !form.machine.trim()) {
@@ -176,32 +190,74 @@ export default function NoteScreen({ route, navigation }: Props) {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
-        {/* Klient / Lokalizacja / Maszyna */}
+        {/* Klient / Lokalizacja / Kraj / Maszyna */}
         <View style={styles.card}>
           <Field label="KLIENT" value={form.client} onChangeText={v => set('client', v)} placeholder="np. Polipol" />
           <Divider />
           <Field label="LOKALIZACJA" value={form.location} onChangeText={v => set('location', v)} placeholder="np. Wągrowiec" />
+          <Divider />
+          <Field label="KRAJ" value={form.kraj} onChangeText={v => set('kraj', v)} placeholder="np. Polska" />
           <Divider />
           <Field label="MASZYNA" value={form.machine} onChangeText={v => set('machine', v)} placeholder="np. Linia produkcyjna" />
           <Divider />
           <Field label="NR MASZYNY" value={form.machineNumber} onChangeText={v => set('machineNumber', v)} placeholder="np. SN-2024-001" />
         </View>
 
-        {/* Data i czas */}
+        {/* Data */}
         <View style={styles.card}>
-          <View style={styles.timeRow}>
-            <View style={{ flex: 2 }}>
-              <Field label="DATA" value={form.date} onChangeText={v => set('date', v)} placeholder="DD.MM.RRRR" keyboardType="numeric" />
+          <Field label="DATA" value={form.date} onChangeText={v => set('date', v)} placeholder="DD.MM.RRRR" keyboardType="numeric" />
+        </View>
+
+        {/* Sesje pracy */}
+        <Text style={styles.sectionLabel}>CZAS PRACY</Text>
+        <View style={styles.card}>
+          {form.sessions.map((session, idx) => (
+            <View key={idx}>
+              {idx > 0 && <Divider />}
+              <View style={styles.sessionRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>OD</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={session.start}
+                    onChangeText={v => updateSession(idx, 'start', v)}
+                    placeholder="08:00"
+                    keyboardType="numeric"
+                    placeholderTextColor={C.muted}
+                  />
+                </View>
+                <View style={styles.timeSep} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.fieldLabel}>DO</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={session.end}
+                    onChangeText={v => updateSession(idx, 'end', v)}
+                    placeholder="16:00"
+                    keyboardType="numeric"
+                    placeholderTextColor={C.muted}
+                  />
+                </View>
+                {form.sessions.length > 1 && (
+                  <TouchableOpacity onPress={() => removeSession(idx)} style={styles.sessionRemove}>
+                    <Ionicons name="close-circle" size={22} color={C.danger} />
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-            <View style={styles.timeSep} />
-            <View style={{ flex: 1 }}>
-              <Field label="OD" value={form.startTime} onChangeText={v => set('startTime', v)} placeholder="08:00" keyboardType="numeric" />
+          ))}
+
+          {totalMinutes > 0 && (
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Łącznie:</Text>
+              <Text style={styles.totalValue}>{formatDuration(totalMinutes)}</Text>
             </View>
-            <View style={styles.timeSep} />
-            <View style={{ flex: 1 }}>
-              <Field label="DO" value={form.endTime} onChangeText={v => set('endTime', v)} placeholder="16:30" keyboardType="numeric" />
-            </View>
-          </View>
+          )}
+
+          <TouchableOpacity style={styles.addSessionBtn} onPress={addSession}>
+            <Ionicons name="add-circle-outline" size={18} color={C.primary} />
+            <Text style={styles.addSessionText}>Dodaj przerwę / kolejną sesję</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Status */}
@@ -237,12 +293,10 @@ export default function NoteScreen({ route, navigation }: Props) {
         {/* Zdjęcia */}
         <Text style={styles.sectionLabel}>ZDJĘCIA ({form.photos.length})</Text>
         <View style={styles.card}>
-          <View style={styles.photoButtons}>
-            <TouchableOpacity style={styles.photoBtn} onPress={showPhotoOptions}>
-              <Ionicons name="camera-outline" size={18} color={C.primary} />
-              <Text style={styles.photoBtnText}>Dodaj zdjęcie</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.photoBtn} onPress={showPhotoOptions}>
+            <Ionicons name="camera-outline" size={18} color={C.primary} />
+            <Text style={styles.photoBtnText}>Dodaj zdjęcie</Text>
+          </TouchableOpacity>
           {form.photos.length > 0 && (
             <View style={styles.photoGrid}>
               {form.photos.map(photo => (
@@ -336,22 +390,35 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 10, fontWeight: '700', color: C.muted, letterSpacing: 0.8, marginBottom: 4, textTransform: 'uppercase' },
   fieldInput: { fontSize: 15, color: C.text, paddingVertical: 2 },
   textarea: { fontSize: 15, color: C.text, lineHeight: 22 },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  timeSep: { width: 1, height: 36, backgroundColor: C.border, marginHorizontal: 12 },
+  sessionRemove: { paddingLeft: 12 },
+  totalRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border,
+  },
+  totalLabel: { fontSize: 12, fontWeight: '700', color: C.muted },
+  totalValue: { fontSize: 16, fontWeight: '700', color: C.primary },
+  addSessionBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border,
+  },
+  addSessionText: { fontSize: 13, color: C.primary, fontWeight: '600' },
   timeRow: { flexDirection: 'row', alignItems: 'center' },
-  timeSep: { width: 1, height: 40, backgroundColor: C.border, marginHorizontal: 8 },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   statusBtn: {
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
     borderWidth: 1.5, borderColor: C.border, backgroundColor: C.bg,
   },
   statusBtnText: { fontSize: 12, fontWeight: '600', color: C.muted },
-  photoButtons: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   photoBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 9, paddingHorizontal: 14, borderRadius: 10,
     borderWidth: 1.5, borderColor: C.primary, borderStyle: 'dashed',
+    alignSelf: 'flex-start',
   },
   photoBtnText: { color: C.primary, fontWeight: '600', fontSize: 14 },
-  photoGrid: { gap: 12 },
+  photoGrid: { gap: 12, marginTop: 12 },
   photoItem: { position: 'relative' },
   photoImg: { width: '100%', height: 200, borderRadius: 10, backgroundColor: C.border },
   photoDelete: { position: 'absolute', top: 6, right: 6 },
