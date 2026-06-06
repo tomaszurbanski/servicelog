@@ -1,23 +1,45 @@
 {
   "expo": {
-    "name": "servicelog",
+    "name": "ServiceLog",
     "slug": "servicelog",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1D4ED8"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.turbanski.servicelog",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ServiceLog needs camera access to add photos to service notes.",
+        "NSPhotoLibraryUsageDescription": "ServiceLog needs photo library access to attach images to service notes."
+      }
     },
     "android": {
+      "package": "com.turbanski.servicelog",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#1D4ED8",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ],
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ServiceLog needs photo library access to attach images to service notes.",
+          "cameraPermission": "ServiceLog needs camera access to add photos to service notes."
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }
