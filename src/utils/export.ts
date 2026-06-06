@@ -3,6 +3,7 @@ import * as Sharing from 'expo-sharing';
 import { File } from 'expo-file-system';
 import { ServiceNote } from '../types';
 import { STATUS_LABELS, calcTotalMinutes, formatDuration } from './helpers';
+import { getTechnician } from './technicianStorage';
 
 const toBase64 = async (uri: string): Promise<string> => {
   try {
@@ -29,6 +30,7 @@ const section = (title: string, content: string) => content.trim() ? `
   </div>` : '';
 
 export const exportToPDF = async (note: ServiceNote): Promise<void> => {
+  const technician = await getTechnician();
   const photoHtmlParts = await Promise.all(
     note.photos.map(async p => {
       const src = await toBase64(p.uri);
@@ -137,7 +139,9 @@ table { width:100%; border-collapse:collapse; }
 </div>
 
 <div class="footer">
-  <div class="footer-left">Wygenerowano przez ServiceLog</div>
+  <div class="footer-left">
+    ${technician.name ? `<strong>${esc(technician.name)}</strong>${technician.company ? ` · ${esc(technician.company)}` : ''}${technician.phone ? ` · ${esc(technician.phone)}` : ''}` : 'ServiceLog'}
+  </div>
   <div class="footer-right">${new Date().toLocaleDateString('pl-PL', { year:'numeric', month:'long', day:'numeric' })}</div>
 </div>
 
