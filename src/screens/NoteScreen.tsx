@@ -15,7 +15,7 @@ import { exportToPDF } from '../utils/export';
 import {
   STATUS_LABELS, STATUS_COLORS, STATUS_BG,
   formatDate, formatTime, generateId,
-  formatTimeInput, calcTotalMinutes, formatDuration,
+  formatTimeInput, clampTimeInput, calcTotalMinutes, formatDuration,
 } from '../utils/helpers';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Note'>;
@@ -221,6 +221,7 @@ export default function NoteScreen({ route, navigation }: Props) {
                     style={styles.fieldInput}
                     value={session.start}
                     onChangeText={v => updateSession(idx, 'start', v)}
+                    onBlur={() => updateSession(idx, 'start', clampTimeInput(session.start))}
                     placeholder="08:00"
                     keyboardType="numeric"
                     placeholderTextColor={C.muted}
@@ -233,6 +234,7 @@ export default function NoteScreen({ route, navigation }: Props) {
                     style={styles.fieldInput}
                     value={session.end}
                     onChangeText={v => updateSession(idx, 'end', v)}
+                    onBlur={() => updateSession(idx, 'end', clampTimeInput(session.end))}
                     placeholder="16:00"
                     keyboardType="numeric"
                     placeholderTextColor={C.muted}

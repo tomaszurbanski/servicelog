@@ -43,6 +43,14 @@ export const formatTimeInput = (raw: string): string => {
   return digits.slice(0, 2) + ':' + digits.slice(2);
 };
 
+export const clampTimeInput = (val: string): string => {
+  if (!val || !val.includes(':')) return val;
+  const [hStr, mStr] = val.split(':');
+  const h = Math.min(Math.max(0, parseInt(hStr, 10) || 0), 23);
+  const m = Math.min(Math.max(0, parseInt(mStr, 10) || 0), 59);
+  return h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
+};
+
 const parseMinutes = (time: string): number => {
   const parts = time.split(':');
   if (parts.length !== 2) return -1;
