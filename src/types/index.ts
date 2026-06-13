@@ -1,5 +1,11 @@
 export type NoteStatus = 'open' | 'in_progress' | 'done' | 'waiting_parts';
 
+export interface CalendarEntry {
+  id: string;
+  date: string; // DD.MM.YYYY
+  text: string;
+}
+
 export interface ServicePhoto {
   id: string;
   uri: string;

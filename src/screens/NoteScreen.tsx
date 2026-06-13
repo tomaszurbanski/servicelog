@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, Alert, Image, ActivityIndicator,
@@ -17,17 +17,75 @@ import {
   formatDate, formatTime, generateId,
   formatTimeInput, clampTimeInput, calcTotalMinutes, formatDuration,
 } from '../utils/helpers';
+import { useTheme } from '../theme/ThemeContext';
+import { Colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Note'>;
 
-const C = {
-  primary: '#1D4ED8', bg: '#F8FAFC', card: '#FFFFFF',
-  text: '#1E293B', muted: '#64748B', border: '#E2E8F0',
-  danger: '#DC2626', success: '#15803D',
-};
-
 const PHOTOS_DIR = new Directory(Paths.document, 'servicelog', 'photos');
 const STATUSES: NoteStatus[] = ['open', 'in_progress', 'done', 'waiting_parts'];
+
+const makeStyles = (C: Colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  content: { padding: 12, gap: 10 },
+  sectionLabel: {
+    fontSize: 11, fontWeight: '700', color: C.muted,
+    letterSpacing: 1, marginTop: 4, paddingHorizontal: 4,
+  },
+  card: {
+    backgroundColor: C.card, borderRadius: 14, padding: 16,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
+  },
+  fieldWrap: { paddingVertical: 6 },
+  fieldLabel: {
+    fontSize: 10, fontWeight: '700', color: C.muted,
+    letterSpacing: 0.8, marginBottom: 4, textTransform: 'uppercase',
+  },
+  fieldInput: { fontSize: 15, color: C.text, paddingVertical: 2 },
+  textarea: { fontSize: 15, color: C.text, lineHeight: 22 },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  timeSep: { width: 1, height: 36, backgroundColor: C.border, marginHorizontal: 12 },
+  sessionRemove: { paddingLeft: 12 },
+  totalRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border,
+  },
+  totalLabel: { fontSize: 12, fontWeight: '700', color: C.muted },
+  totalValue: { fontSize: 16, fontWeight: '700', color: C.primary },
+  addSessionBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border,
+  },
+  addSessionText: { fontSize: 13, color: C.primary, fontWeight: '600' },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statusBtn: {
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+    borderWidth: 1.5, borderColor: C.border, backgroundColor: C.bg,
+  },
+  statusBtnText: { fontSize: 12, fontWeight: '600', color: C.muted },
+  photoBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 9, paddingHorizontal: 14, borderRadius: 10,
+    borderWidth: 1.5, borderColor: C.primary, borderStyle: 'dashed',
+    alignSelf: 'flex-start',
+  },
+  photoBtnText: { color: C.primary, fontWeight: '600', fontSize: 14 },
+  photoGrid: { gap: 12, marginTop: 12 },
+  photoItem: { position: 'relative' },
+  photoImg: { width: '100%', height: 200, borderRadius: 10, backgroundColor: C.border },
+  photoDelete: { position: 'absolute', top: 6, right: 6 },
+  captionInput: {
+    marginTop: 6, borderWidth: 1, borderColor: C.border, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 7, fontSize: 13, color: C.text,
+    backgroundColor: C.bg, minHeight: 38,
+  },
+  pdfBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: C.primary, padding: 16, borderRadius: 14, marginTop: 4,
+    shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+  },
+  pdfBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+});
 
 const emptyNote = (): Omit<ServiceNote, 'id' | 'createdAt' | 'updatedAt'> => ({
   status: 'open',
@@ -46,6 +104,9 @@ const emptyNote = (): Omit<ServiceNote, 'id' | 'createdAt' | 'updatedAt'> => ({
 });
 
 export default function NoteScreen({ route, navigation }: Props) {
+  const { colors: C } = useTheme();
+  const s = useMemo(() => makeStyles(C), [C]);
+
   const noteId = route.params?.noteId;
   const isNew = !noteId;
 
@@ -107,7 +168,7 @@ export default function NoteScreen({ route, navigation }: Props) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, isNew, handleSave, saving]);
+  }, [navigation, isNew, handleSave, saving, C.primary]);
 
   const ensurePhotosDir = () => {
     if (!PHOTOS_DIR.exists) PHOTOS_DIR.create({ intermediates: true });
@@ -180,7 +241,7 @@ export default function NoteScreen({ route, navigation }: Props) {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}>
         <ActivityIndicator size="large" color={C.primary} />
       </View>
     );
@@ -188,37 +249,34 @@ export default function NoteScreen({ route, navigation }: Props) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView style={s.container} contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
 
-        {/* Klient / Lokalizacja / Kraj / Maszyna */}
-        <View style={styles.card}>
-          <Field label="KLIENT" value={form.client} onChangeText={v => set('client', v)} placeholder="np. Polipol" />
-          <Divider />
-          <Field label="LOKALIZACJA" value={form.location} onChangeText={v => set('location', v)} placeholder="np. Wągrowiec" />
-          <Divider />
-          <Field label="KRAJ" value={form.kraj} onChangeText={v => set('kraj', v)} placeholder="np. Polska" />
-          <Divider />
-          <Field label="MASZYNA" value={form.machine} onChangeText={v => set('machine', v)} placeholder="np. Linia produkcyjna" />
-          <Divider />
-          <Field label="NR MASZYNY" value={form.machineNumber} onChangeText={v => set('machineNumber', v)} placeholder="np. SN-2024-001" />
+        <View style={s.card}>
+          <Field s={s} C={C} label="KLIENT" value={form.client} onChangeText={v => set('client', v)} placeholder="np. Polipol" />
+          <Divider C={C} />
+          <Field s={s} C={C} label="LOKALIZACJA" value={form.location} onChangeText={v => set('location', v)} placeholder="np. Wągrowiec" />
+          <Divider C={C} />
+          <Field s={s} C={C} label="KRAJ" value={form.kraj} onChangeText={v => set('kraj', v)} placeholder="np. Polska" />
+          <Divider C={C} />
+          <Field s={s} C={C} label="MASZYNA" value={form.machine} onChangeText={v => set('machine', v)} placeholder="np. Linia produkcyjna" />
+          <Divider C={C} />
+          <Field s={s} C={C} label="NR MASZYNY" value={form.machineNumber} onChangeText={v => set('machineNumber', v)} placeholder="np. SN-2024-001" />
         </View>
 
-        {/* Data */}
-        <View style={styles.card}>
-          <Field label="DATA" value={form.date} onChangeText={v => set('date', v)} placeholder="DD.MM.RRRR" keyboardType="numeric" />
+        <View style={s.card}>
+          <Field s={s} C={C} label="DATA" value={form.date} onChangeText={v => set('date', v)} placeholder="DD.MM.RRRR" keyboardType="numeric" />
         </View>
 
-        {/* Sesje pracy */}
-        <Text style={styles.sectionLabel}>CZAS PRACY</Text>
-        <View style={styles.card}>
+        <Text style={s.sectionLabel}>CZAS PRACY</Text>
+        <View style={s.card}>
           {form.sessions.map((session, idx) => (
             <View key={idx}>
-              {idx > 0 && <Divider />}
-              <View style={styles.sessionRow}>
+              {idx > 0 && <Divider C={C} />}
+              <View style={s.sessionRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>OD</Text>
+                  <Text style={s.fieldLabel}>OD</Text>
                   <TextInput
-                    style={styles.fieldInput}
+                    style={s.fieldInput}
                     value={session.start}
                     onChangeText={v => updateSession(idx, 'start', v)}
                     onBlur={() => updateSession(idx, 'start', clampTimeInput(session.start))}
@@ -227,11 +285,11 @@ export default function NoteScreen({ route, navigation }: Props) {
                     placeholderTextColor={C.muted}
                   />
                 </View>
-                <View style={styles.timeSep} />
+                <View style={s.timeSep} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.fieldLabel}>DO</Text>
+                  <Text style={s.fieldLabel}>DO</Text>
                   <TextInput
-                    style={styles.fieldInput}
+                    style={s.fieldInput}
                     value={session.end}
                     onChangeText={v => updateSession(idx, 'end', v)}
                     onBlur={() => updateSession(idx, 'end', clampTimeInput(session.end))}
@@ -241,7 +299,7 @@ export default function NoteScreen({ route, navigation }: Props) {
                   />
                 </View>
                 {form.sessions.length > 1 && (
-                  <TouchableOpacity onPress={() => removeSession(idx)} style={styles.sessionRemove}>
+                  <TouchableOpacity onPress={() => removeSession(idx)} style={s.sessionRemove}>
                     <Ionicons name="close-circle" size={22} color={C.danger} />
                   </TouchableOpacity>
                 )}
@@ -250,65 +308,62 @@ export default function NoteScreen({ route, navigation }: Props) {
           ))}
 
           {totalMinutes > 0 && (
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Łącznie:</Text>
-              <Text style={styles.totalValue}>{formatDuration(totalMinutes)}</Text>
+            <View style={s.totalRow}>
+              <Text style={s.totalLabel}>Łącznie:</Text>
+              <Text style={s.totalValue}>{formatDuration(totalMinutes)}</Text>
             </View>
           )}
 
-          <TouchableOpacity style={styles.addSessionBtn} onPress={addSession}>
+          <TouchableOpacity style={s.addSessionBtn} onPress={addSession}>
             <Ionicons name="add-circle-outline" size={18} color={C.primary} />
-            <Text style={styles.addSessionText}>Dodaj przerwę / kolejną sesję</Text>
+            <Text style={s.addSessionText}>Dodaj przerwę / kolejną sesję</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Status */}
-        <Text style={styles.sectionLabel}>STATUS</Text>
-        <View style={styles.card}>
-          <View style={styles.statusRow}>
-            {STATUSES.map(s => (
+        <Text style={s.sectionLabel}>STATUS</Text>
+        <View style={s.card}>
+          <View style={s.statusRow}>
+            {STATUSES.map(st => (
               <TouchableOpacity
-                key={s}
-                style={[styles.statusBtn, form.status === s && { backgroundColor: STATUS_BG[s], borderColor: STATUS_COLORS[s] }]}
-                onPress={() => set('status', s)}
+                key={st}
+                style={[s.statusBtn, form.status === st && { backgroundColor: STATUS_BG[st], borderColor: STATUS_COLORS[st] }]}
+                onPress={() => set('status', st)}
               >
-                <Text style={[styles.statusBtnText, form.status === s && { color: STATUS_COLORS[s] }]}>
-                  {STATUS_LABELS[s]}
+                <Text style={[s.statusBtnText, form.status === st && { color: STATUS_COLORS[st] }]}>
+                  {STATUS_LABELS[st]}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Opisy */}
-        <Text style={styles.sectionLabel}>SZCZEGÓŁY</Text>
-        <View style={styles.card}>
-          <TextAreaField label="OPIS USTERKI" value={form.problem} onChangeText={v => set('problem', v)} placeholder="Opisz problem, objawy, okoliczności…" />
-          <Divider />
-          <TextAreaField label="WYKONANE PRACE" value={form.workDone} onChangeText={v => set('workDone', v)} placeholder="Co zostało sprawdzone / naprawione / wymienione…" />
-          <Divider />
-          <TextAreaField label="CZĘŚCI DO WYMIANY" value={form.parts} onChangeText={v => set('parts', v)} placeholder="np. Czujnik indukcyjny M12 PNP, przewód M12 5m…" height={80} />
-          <Divider />
-          <TextAreaField label="UWAGI / ZALECENIA" value={form.notes} onChangeText={v => set('notes', v)} placeholder="Dodatkowe uwagi, zalecenia dla klienta…" height={80} />
+        <Text style={s.sectionLabel}>SZCZEGÓŁY</Text>
+        <View style={s.card}>
+          <TextAreaField s={s} C={C} label="OPIS USTERKI" value={form.problem} onChangeText={v => set('problem', v)} placeholder="Opisz problem, objawy, okoliczności…" />
+          <Divider C={C} />
+          <TextAreaField s={s} C={C} label="WYKONANE PRACE" value={form.workDone} onChangeText={v => set('workDone', v)} placeholder="Co zostało sprawdzone / naprawione / wymienione…" />
+          <Divider C={C} />
+          <TextAreaField s={s} C={C} label="CZĘŚCI DO WYMIANY" value={form.parts} onChangeText={v => set('parts', v)} placeholder="np. Czujnik indukcyjny M12 PNP, przewód M12 5m…" height={80} />
+          <Divider C={C} />
+          <TextAreaField s={s} C={C} label="UWAGI / ZALECENIA" value={form.notes} onChangeText={v => set('notes', v)} placeholder="Dodatkowe uwagi, zalecenia dla klienta…" height={80} />
         </View>
 
-        {/* Zdjęcia */}
-        <Text style={styles.sectionLabel}>ZDJĘCIA ({form.photos.length})</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.photoBtn} onPress={showPhotoOptions}>
+        <Text style={s.sectionLabel}>ZDJĘCIA ({form.photos.length})</Text>
+        <View style={s.card}>
+          <TouchableOpacity style={s.photoBtn} onPress={showPhotoOptions}>
             <Ionicons name="camera-outline" size={18} color={C.primary} />
-            <Text style={styles.photoBtnText}>Dodaj zdjęcie</Text>
+            <Text style={s.photoBtnText}>Dodaj zdjęcie</Text>
           </TouchableOpacity>
           {form.photos.length > 0 && (
-            <View style={styles.photoGrid}>
+            <View style={s.photoGrid}>
               {form.photos.map(photo => (
-                <View key={photo.id} style={styles.photoItem}>
-                  <Image source={{ uri: photo.uri }} style={styles.photoImg} />
-                  <TouchableOpacity style={styles.photoDelete} onPress={() => removePhoto(photo.id)}>
+                <View key={photo.id} style={s.photoItem}>
+                  <Image source={{ uri: photo.uri }} style={s.photoImg} />
+                  <TouchableOpacity style={s.photoDelete} onPress={() => removePhoto(photo.id)}>
                     <Ionicons name="close-circle" size={22} color={C.danger} />
                   </TouchableOpacity>
                   <TextInput
-                    style={styles.captionInput}
+                    style={s.captionInput}
                     value={photo.caption}
                     onChangeText={v => updateCaption(photo.id, v)}
                     placeholder="Opis zdjęcia…"
@@ -321,12 +376,11 @@ export default function NoteScreen({ route, navigation }: Props) {
           )}
         </View>
 
-        {/* Generuj PDF */}
-        <TouchableOpacity style={styles.pdfBtn} onPress={handleExport} disabled={exporting} activeOpacity={0.85}>
+        <TouchableOpacity style={s.pdfBtn} onPress={handleExport} disabled={exporting} activeOpacity={0.85}>
           {exporting
             ? <ActivityIndicator color="#fff" />
             : <Ionicons name="document-text-outline" size={20} color="#fff" />}
-          <Text style={styles.pdfBtnText}>{exporting ? 'Generowanie…' : 'Generuj raport PDF'}</Text>
+          <Text style={s.pdfBtnText}>{exporting ? 'Generowanie…' : 'Generuj raport PDF'}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 32 }} />
@@ -335,15 +389,17 @@ export default function NoteScreen({ route, navigation }: Props) {
   );
 }
 
-function Field({ label, value, onChangeText, placeholder, keyboardType }: {
-  label: string; value: string; onChangeText: (v: string) => void;
-  placeholder?: string; keyboardType?: any;
+type StylesObj = ReturnType<typeof makeStyles>;
+
+function Field({ s, C, label, value, onChangeText, placeholder, keyboardType }: {
+  s: StylesObj; C: Colors; label: string; value: string;
+  onChangeText: (v: string) => void; placeholder?: string; keyboardType?: any;
 }) {
   return (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={s.fieldWrap}>
+      <Text style={s.fieldLabel}>{label}</Text>
       <TextInput
-        style={styles.fieldInput}
+        style={s.fieldInput}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -355,15 +411,15 @@ function Field({ label, value, onChangeText, placeholder, keyboardType }: {
   );
 }
 
-function TextAreaField({ label, value, onChangeText, placeholder, height = 110 }: {
-  label: string; value: string; onChangeText: (v: string) => void;
-  placeholder?: string; height?: number;
+function TextAreaField({ s, C, label, value, onChangeText, placeholder, height = 110 }: {
+  s: StylesObj; C: Colors; label: string; value: string;
+  onChangeText: (v: string) => void; placeholder?: string; height?: number;
 }) {
   return (
-    <View style={styles.fieldWrap}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={s.fieldWrap}>
+      <Text style={s.fieldLabel}>{label}</Text>
       <TextInput
-        style={[styles.textarea, { height }]}
+        style={[s.textarea, { height }]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -376,63 +432,6 @@ function TextAreaField({ label, value, onChangeText, placeholder, height = 110 }
   );
 }
 
-function Divider() {
+function Divider({ C }: { C: Colors }) {
   return <View style={{ height: 1, backgroundColor: C.border, marginHorizontal: -16, marginVertical: 2 }} />;
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  content: { padding: 12, gap: 10 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: C.muted, letterSpacing: 1, marginTop: 4, paddingHorizontal: 4 },
-  card: {
-    backgroundColor: C.card, borderRadius: 14, padding: 16,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2,
-  },
-  fieldWrap: { paddingVertical: 6 },
-  fieldLabel: { fontSize: 10, fontWeight: '700', color: C.muted, letterSpacing: 0.8, marginBottom: 4, textTransform: 'uppercase' },
-  fieldInput: { fontSize: 15, color: C.text, paddingVertical: 2 },
-  textarea: { fontSize: 15, color: C.text, lineHeight: 22 },
-  sessionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  timeSep: { width: 1, height: 36, backgroundColor: C.border, marginHorizontal: 12 },
-  sessionRemove: { paddingLeft: 12 },
-  totalRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border,
-  },
-  totalLabel: { fontSize: 12, fontWeight: '700', color: C.muted },
-  totalValue: { fontSize: 16, fontWeight: '700', color: C.primary },
-  addSessionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border,
-  },
-  addSessionText: { fontSize: 13, color: C.primary, fontWeight: '600' },
-  timeRow: { flexDirection: 'row', alignItems: 'center' },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statusBtn: {
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
-    borderWidth: 1.5, borderColor: C.border, backgroundColor: C.bg,
-  },
-  statusBtnText: { fontSize: 12, fontWeight: '600', color: C.muted },
-  photoBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 9, paddingHorizontal: 14, borderRadius: 10,
-    borderWidth: 1.5, borderColor: C.primary, borderStyle: 'dashed',
-    alignSelf: 'flex-start',
-  },
-  photoBtnText: { color: C.primary, fontWeight: '600', fontSize: 14 },
-  photoGrid: { gap: 12, marginTop: 12 },
-  photoItem: { position: 'relative' },
-  photoImg: { width: '100%', height: 200, borderRadius: 10, backgroundColor: C.border },
-  photoDelete: { position: 'absolute', top: 6, right: 6 },
-  captionInput: {
-    marginTop: 6, borderWidth: 1, borderColor: C.border, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 7, fontSize: 13, color: C.text,
-    backgroundColor: C.bg, minHeight: 38,
-  },
-  pdfBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: C.primary, padding: 16, borderRadius: 14, marginTop: 4,
-    shadowColor: C.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-  },
-  pdfBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-});

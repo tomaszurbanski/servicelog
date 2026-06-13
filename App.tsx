@@ -10,6 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 import HomeScreen from './src/screens/HomeScreen';
 import NoteScreen from './src/screens/NoteScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import CalendarScreen from './src/screens/CalendarScreen';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 export type RootStackParamList = {
   Home: undefined;
@@ -19,19 +21,15 @@ export type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
-const C = {
-  primary: '#1D4ED8', text: '#1E293B', muted: '#94A3B8',
-  card: '#FFFFFF', border: '#E2E8F0',
-};
-
 function NotesStack() {
+  const { colors: C } = useTheme();
   return (
     <Stack.Navigator
       screenOptions={{
         headerStyle: { backgroundColor: C.card },
         headerTitleStyle: { fontWeight: '700', fontSize: 17, color: C.text },
         headerTintColor: C.primary,
-        contentStyle: { backgroundColor: '#F8FAFC' },
+        contentStyle: { backgroundColor: C.bg },
       }}
     >
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'ServiceLog' }} />
@@ -40,27 +38,29 @@ function NotesStack() {
   );
 }
 
-export default function App() {
+function AppInner() {
+  const { colors: C } = useTheme();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={C.statusBar} />
         <NavigationContainer>
           <Tab.Navigator
             screenOptions={({ route }) => ({
-              headerStyle: { backgroundColor: C.card, elevation: 0, shadowOpacity: 0 },
+              headerStyle: { backgroundColor: C.tabBar, elevation: 0, shadowOpacity: 0 },
               headerTitleStyle: { fontWeight: '700', fontSize: 18, color: C.text },
               tabBarActiveTintColor: C.primary,
               tabBarInactiveTintColor: C.muted,
               tabBarStyle: {
-                backgroundColor: C.card,
+                backgroundColor: C.tabBar,
                 borderTopWidth: 1,
-                borderTopColor: C.border,
+                borderTopColor: C.tabBorder,
                 paddingBottom: 4,
               },
               tabBarIcon: ({ color, size, focused }) => {
                 const icons: Record<string, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
                   Notes: ['document-text', 'document-text-outline'],
+                  Calendar: ['calendar', 'calendar-outline'],
                   Settings: ['settings', 'settings-outline'],
                 };
                 const [filled, outline] = icons[route.name] ?? ['help', 'help-outline'];
@@ -74,6 +74,11 @@ export default function App() {
               options={{ headerShown: false, tabBarLabel: 'Notatki' }}
             />
             <Tab.Screen
+              name="Calendar"
+              component={CalendarScreen}
+              options={{ title: 'Kalendarz', tabBarLabel: 'Kalendarz' }}
+            />
+            <Tab.Screen
               name="Settings"
               component={SettingsScreen}
               options={{ title: 'Ustawienia', tabBarLabel: 'Ustawienia' }}
@@ -82,5 +87,13 @@ export default function App() {
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppInner />
+    </ThemeProvider>
   );
 }

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ServiceNote } from '../types';
+import { ServiceNote, CalendarEntry } from '../types';
 
 const NOTES_KEY = '@servicelog_notes';
 
@@ -35,4 +35,28 @@ export const saveNote = async (note: ServiceNote): Promise<void> => {
 export const deleteNote = async (id: string): Promise<void> => {
   const notes = await getNotes();
   await AsyncStorage.setItem(NOTES_KEY, JSON.stringify(notes.filter(n => n.id !== id)));
+};
+
+const CALENDAR_KEY = '@servicelog_calendar';
+type EntriesMap = Record<string, CalendarEntry[]>;
+
+export const getCalendarEntries = async (): Promise<EntriesMap> => {
+  const data = await AsyncStorage.getItem(CALENDAR_KEY);
+  return data ? JSON.parse(data) : {};
+};
+
+export const saveCalendarEntry = async (entry: CalendarEntry): Promise<void> => {
+  const map = await getCalendarEntries();
+  if (!map[entry.date]) map[entry.date] = [];
+  map[entry.date].push(entry);
+  await AsyncStorage.setItem(CALENDAR_KEY, JSON.stringify(map));
+};
+
+export const deleteCalendarEntry = async (id: string): Promise<void> => {
+  const map = await getCalendarEntries();
+  for (const date of Object.keys(map)) {
+    map[date] = map[date].filter(e => e.id !== id);
+    if (map[date].length === 0) delete map[date];
+  }
+  await AsyncStorage.setItem(CALENDAR_KEY, JSON.stringify(map));
 };
